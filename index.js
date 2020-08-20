@@ -71,7 +71,7 @@ class Validator {
 	}
 
 
-	// to validate taxes for applied on transaction 
+	// to validate taxes applied on transaction 
 	validateTransactionTaxes = async (data) => {
 
 		if (!data) {
