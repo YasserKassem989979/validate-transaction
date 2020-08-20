@@ -9,7 +9,7 @@ exports.removeDuplicateId = (arr) => {
 exports.sumOfTaxes = (arr) => {
 	return arr.reduce((total, tax) => {
 		if (!isNaN(tax.applied_money.amount)) {
-			return total + tax.applied_money.amount;
+			return total + Number(tax.applied_money.amount);
 		} else {
 			throw new Error(`Tax amount for item with id:${tax.id} is not a number`);
 		}
@@ -53,3 +53,6 @@ exports.convertXmlToJson = async (trans) => {
 	}
 
 }
+
+
+exports.resultObj = (errors,isValid) =>({errors:[...errors],isValid})

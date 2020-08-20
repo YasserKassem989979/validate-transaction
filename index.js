@@ -1,6 +1,6 @@
 const transSample = require("./trans-samples/transaction.json"),
-	{ removeDuplicateId, sumOfTaxes, convertXmlToJson } = require("./utils/helpers");
-
+	{ removeDuplicateId, sumOfTaxes, convertXmlToJson,resultObj } = require("./utils/helpers"),
+	 fs = require('fs');
 
 
 class Validator {
@@ -18,10 +18,7 @@ class Validator {
 		} else if (jsonTransaction && jsonTransaction.type === 'XML') {
 			return this.validateItemsTaxesForXml(jsonTransaction.trans)
 		} else {
-			return {
-				errors: ['invalid transaction'],
-				isVaild: false
-			}
+			return resultObj(['invalid transaction'],false) 
 		}
 
 	};
@@ -39,10 +36,7 @@ class Validator {
 		} else if (jsonTransaction && jsonTransaction.type === 'XML') {
 			return this.validateTransactionTaxesForXml(jsonTransaction.trans)
 		} else {
-			return {
-				errors: ['invalid transaction'],
-				isVaild: false
-			}
+			return resultObj(['invalid transaction'],false)
 		}
 	};
 
@@ -57,30 +51,17 @@ class Validator {
 				const itemTaxes = sumOfTaxes(removeDuplicateId(item.taxes));
 				const itemTotalMoney = item.total_money.amount;
 				if (itemTaxes !== itemTotalMoney - itemNetaSlesMoney) {
-					return {
-						errors: [`taxes is not valid for item: ${item.name}!`],
-						isVaild: false,
-					};
+					return resultObj([`taxes is not valid for item: ${item.name}!`],false);
 				}
 			}
 
-			return {
-				errors: [],
-				isVaild: true,
-			};
+			return resultObj([],true)
 		}
-
-		return {
-			errors: [
-				"itemization property of tranaction is undefined or is not an array",
-			],
-			isVaild: false,
-		};
+		return resultObj(["itemization property of tranaction is undefined or is not an array"],false) 
 	}
 
 
 	//#################################################
-	//########################################
 	validateItemsTaxesForXml = (trans) => {
 		const items = trans.itemization && trans.itemization.element;
 		if (items && Array.isArray(items)) {
@@ -89,36 +70,26 @@ class Validator {
 				const itemNetaSlesMoney = item.net_sales_money.amount;
 				const itemTaxes = sumOfTaxes(removeDuplicateId(item.taxes.element));
 				const itemTotalMoney = item.total_money.amount;
+
 				if (itemTaxes !== itemTotalMoney - itemNetaSlesMoney) {
-					return {
-						errors: [`taxes is not valid for item: ${item.name}!`],
-						isVaild: false,
-					};
+					return resultObj([`taxes is not valid for item: ${item.name}!`],false);
 				}
 			}
-			return {
-				errors: [],
-				isVaild: true,
-			};
+			return resultObj([],true); 
+
 		} else if (items) {
 			const item = items;
 			const itemNetaSlesMoney = item.net_sales_money.amount;
 			const itemTaxes = sumOfTaxes(removeDuplicateId(item.taxes.element));
 			const itemTotalMoney = item.total_money.amount;
 			if (itemTaxes !== itemTotalMoney - itemNetaSlesMoney) {
-				return {
-					errors: [`taxes is not valid for item: ${item.name}!`],
-					isVaild: false,
-				};
+				return resultObj([`taxes is not valid for item: ${item.name}!`],false);
 			}
+
+			return resultObj([],true); 
 		}
 
-		return {
-			errors: [
-				"itemization property of tranaction is undefined",
-			],
-			isVaild: false,
-		};
+		return resultObj(["itemization property of tranaction is undefined",],false);
 	}
 
 
@@ -135,65 +106,44 @@ class Validator {
 			!isNaN(inclusive_tax_money.amount);
 
 		if (!allExist || !allNum) {
-			return {
-				errors: ["invalid transaction"],
-				isVaild: false
-			};
+			return resultObj(["invalid transaction"],false); 
 		}
 
 		if (
 			additive_tax_money.amount + inclusive_tax_money.amount !==
 			tax_money.amount
 		) {
-			return {
-				errors: [
-					"summation of additive_tax and inclusive_tax not equal tax_money",
-				],
-				isVaild: false,
-			};
+			return resultObj(["summation of additive_tax and inclusive_tax not equal tax_money",],false); 
 		}
 
 		const inclusiveTaxMoney = inclusive_tax_money.amount;
 		if (inclusiveTaxMoney > 0 && taxes.length === 0) {
-			return {
-				errors: ["Taxes property is required"],
-				isVaild: false,
-			};
+			return resultObj(["Taxes property is required"],false);   
 		}
 		const sumOfinclusiveTaxMoney = sumOfTaxes(removeDuplicateId(taxes).filter((i) => i.inclusion_type === "INCLUSIVE"));
 		if (inclusiveTaxMoney !== sumOfinclusiveTaxMoney) {
-			return {
-				errors: [
-					"inclusive_tax_money amount does not equal the summation of taxes of type INCLUSIVE",
-				],
-				isVaild: false,
-			};
+			return resultObj(["inclusive_tax_money amount does not equal the summation of taxes of type INCLUSIVE"],false);
 		}
 
 		const additiveTaxMoney = additive_tax_money.amount;
 		if (additiveTaxMoney > 0 && taxes.length === 0) {
-			return {
-				errors: ["Taxes property is required"],
-				isVaild: false,
-			};
+			return resultObj(["Taxes property is required"],false);
 		}
 		//here i am assuming the type property value it will be ADDITIVE
 		const sumOfAdditiveTaxMoney = sumOfTaxes(removeDuplicateId(taxes).filter((i) => i.inclusion_type === "ADDITIVE"));
 		if (additiveTaxMoney !== sumOfAdditiveTaxMoney) {
-			return {
-				errors: [
-					"additive_tax_money amount does not equal the summation of taxes of type ADDITIVE",
-				],
-				isVaild: false,
-			};
+			return resultObj(["additive_tax_money amount does not equal the summation of taxes of type ADDITIVE"],false);
 		}
-
-		return {
-			errors: [],
-			isVaild: true,
-		};
+		return resultObj([],true);  
 	}
 }
 
 const v = new Validator();
-console.log(v.validateItemsTaxes(transSample));
+v.validateItemsTaxes(transSample).then((value=>{
+	console.log(value)
+}));
+fs.readFile(__dirname + '/trans-samples/transaction.xml',async (err, data) => {
+    v.validateItemsTaxes(data).then((value=>{
+		console.log(value)
+	}));
+})
