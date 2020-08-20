@@ -1,20 +1,17 @@
 {
-  "name": "test",
+  "name": "transaction-validator",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "debug": "ndb playground.js"
+    "test": "mocha"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.17.1",
+    "mocha": "^8.1.1",
     "xml2js": "^0.4.23"
   },
-  "devDependencies": {
-    "ndb": "^1.1.5"
-  }
+  "devDependencies": {}
 }
